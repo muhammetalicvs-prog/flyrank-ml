@@ -3,206 +3,656 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A public research paper comparing an interpretable fixed-rule baseline with Logistic Regression and Random Forest for prioritizing content records for human review.">
+  <meta name="description" content="A public-safe research paper comparing an interpretable fixed-rule baseline with Logistic Regression and Random Forest for prioritizing FlyRank content records for human review.">
+  <meta name="author" content="Muhammet Ali Çavuş">
+  <meta name="theme-color" content="#111936">
+
   <title>Can Search and Engagement Signals Prioritize Content for Human Review?</title>
+
   <style>
     :root {
-      --bg: #f6f8fb;
+      --bg: #f4f6fb;
       --paper: #ffffff;
-      --text: #172033;
-      --muted: #5c667a;
-      --line: #dfe5ee;
-      --accent: #3157d5;
-      --accent-soft: #eef2ff;
-      --good: #16794a;
-      --shadow: 0 18px 50px rgba(22, 32, 51, .08);
+      --paper-soft: #f9faff;
+      --ink: #172033;
+      --muted: #5b667a;
+      --line: #dce3ee;
+      --primary: #5145cd;
+      --primary-dark: #342b92;
+      --primary-soft: #efedff;
+      --teal: #0d8591;
+      --teal-soft: #e9f8fa;
+      --good: #17794b;
+      --good-soft: #eaf8f1;
+      --warn: #8a590b;
+      --warn-soft: #fff5df;
+      --hero-a: #0b1128;
+      --hero-b: #1b2c66;
+      --hero-c: #4b3baa;
+      --shadow-sm: 0 8px 24px rgba(18, 28, 55, .07);
+      --shadow-md: 0 18px 52px rgba(18, 28, 55, .11);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 28px;
+      --page: 1080px;
     }
+
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 76px;
+    }
+
     body {
       margin: 0;
-      background: var(--bg);
-      color: var(--text);
+      background:
+        radial-gradient(circle at 16% 0%, rgba(81, 69, 205, .09), transparent 30%),
+        var(--bg);
+      color: var(--ink);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
       line-height: 1.72;
+      text-rendering: optimizeLegibility;
     }
-    a { color: var(--accent); }
+
+    a {
+      color: var(--primary);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    a:hover { color: var(--primary-dark); }
+
+    code {
+      padding: .15em .4em;
+      border: 1px solid #e1e6ef;
+      border-radius: 6px;
+      background: #f0f3f8;
+      color: #28344c;
+      font-size: .92em;
+    }
+
+    .page {
+      width: min(calc(100% - 40px), var(--page));
+      margin-inline: auto;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: -60px;
+      left: 18px;
+      z-index: 999;
+      padding: 10px 15px;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--primary-dark);
+      font-weight: 800;
+      transition: top .2s ease;
+    }
+
+    .skip-link:focus { top: 16px; }
+
+    /* Hero */
     .hero {
-      background: linear-gradient(135deg, #111a33 0%, #223b80 100%);
-      color: white;
-      padding: 72px 24px 64px;
+      position: relative;
+      overflow: hidden;
+      padding: 82px 0 70px;
+      background:
+        radial-gradient(circle at 82% 15%, rgba(126, 111, 255, .46), transparent 29%),
+        radial-gradient(circle at 14% 105%, rgba(33, 184, 189, .24), transparent 35%),
+        linear-gradient(135deg, var(--hero-a), var(--hero-b) 58%, var(--hero-c));
+      color: #fff;
     }
-    .hero-inner, main, footer {
-      max-width: 980px;
-      margin: 0 auto;
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .16;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, #000, transparent 92%);
     }
+
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(270px, .62fr);
+      gap: 48px;
+      align-items: center;
+    }
+
     .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 18px;
+      padding: 8px 13px;
+      border: 1px solid rgba(255,255,255,.23);
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      color: #e7ecff;
+      font-size: .76rem;
+      font-weight: 850;
+      letter-spacing: .11em;
       text-transform: uppercase;
-      letter-spacing: .12em;
-      font-size: .78rem;
-      font-weight: 700;
-      opacity: .78;
+      backdrop-filter: blur(10px);
     }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #5ae3df;
+      box-shadow: 0 0 15px rgba(90, 227, 223, .9);
+    }
+
     h1 {
-      max-width: 850px;
-      margin: 14px 0 18px;
-      font-size: clamp(2.2rem, 5vw, 4.3rem);
-      line-height: 1.06;
-      letter-spacing: -.035em;
+      max-width: 820px;
+      margin: 0;
+      font-size: clamp(2.5rem, 6vw, 5.1rem);
+      line-height: 1.01;
+      letter-spacing: -.052em;
+      text-wrap: balance;
     }
+
     .subtitle {
       max-width: 760px;
-      font-size: 1.15rem;
-      color: #d8e1ff;
+      margin: 24px 0 0;
+      color: #dbe4ff;
+      font-size: clamp(1.04rem, 2vw, 1.2rem);
+      line-height: 1.68;
     }
-    .meta {
+
+    .hero-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px 24px;
-      margin-top: 28px;
-      font-size: .95rem;
-      color: #d8e1ff;
+      gap: 10px 24px;
+      margin-top: 29px;
+      color: #dce5ff;
+      font-size: .93rem;
     }
-    nav {
+
+    .hero-result {
+      padding: 28px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 24px;
+      background: rgba(8, 16, 43, .46);
+      box-shadow: 0 28px 75px rgba(5, 12, 35, .25);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero-result small {
+      display: block;
+      margin-bottom: 8px;
+      color: #cbd5ff;
+      font-weight: 850;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    .hero-result strong {
+      display: block;
+      color: #fff;
+      font-size: clamp(3.2rem, 7vw, 5.2rem);
+      line-height: 1;
+      letter-spacing: -.055em;
+    }
+
+    .hero-result p {
+      margin: 11px 0 0;
+      color: #eef2ff;
+      font-weight: 760;
+    }
+
+    .hero-result .detail {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,.15);
+      color: #d6def7;
+      font-size: .91rem;
+      font-weight: 450;
+    }
+
+    /* Navigation */
+    .nav {
       position: sticky;
       top: 0;
-      z-index: 5;
+      z-index: 50;
       overflow-x: auto;
       white-space: nowrap;
-      background: rgba(255,255,255,.96);
-      border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(202, 211, 226, .88);
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(15px);
     }
-    nav div {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 13px 24px;
+
+    .nav-inner {
+      display: flex;
+      min-width: max-content;
+      gap: 6px;
+      align-items: center;
+      padding: 11px 0;
     }
-    nav a {
-      margin-right: 20px;
-      text-decoration: none;
+
+    .nav a {
+      padding: 8px 12px;
+      border-radius: 9px;
       color: var(--muted);
-      font-size: .9rem;
-      font-weight: 650;
+      font-size: .86rem;
+      font-weight: 760;
+      text-decoration: none;
     }
-    main { padding: 34px 24px 70px; }
+
+    .nav a:hover {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    /* Main */
+    main { padding: 42px 0 78px; }
+
     section {
-      background: var(--paper);
+      position: relative;
       margin: 22px 0;
-      padding: clamp(24px, 5vw, 48px);
+      padding: clamp(26px, 5vw, 50px);
       border: 1px solid var(--line);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, #fff, #fcfdff);
+      box-shadow: var(--shadow-md);
     }
+
+    section::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: clamp(26px, 5vw, 50px);
+      width: 76px;
+      height: 4px;
+      border-radius: 0 0 10px 10px;
+      background: linear-gradient(90deg, var(--primary), var(--teal));
+    }
+
+    .section-label {
+      margin: 0 0 8px;
+      color: var(--primary);
+      font-size: .76rem;
+      font-weight: 850;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
     h2 {
-      margin-top: 0;
-      font-size: clamp(1.55rem, 3vw, 2.2rem);
-      line-height: 1.2;
-      letter-spacing: -.02em;
+      margin: 0 0 22px;
+      font-size: clamp(1.65rem, 3vw, 2.35rem);
+      line-height: 1.16;
+      letter-spacing: -.03em;
+      text-wrap: balance;
     }
-    h3 { margin-top: 30px; line-height: 1.25; }
+
+    h3 {
+      margin: 31px 0 10px;
+      font-size: 1.13rem;
+      line-height: 1.35;
+      letter-spacing: -.012em;
+    }
+
     p { margin: 13px 0; }
+    ul, ol { padding-left: 1.3rem; }
+    li { margin: 8px 0; }
+
+    .lead {
+      max-width: 850px;
+      color: #303c54;
+      font-size: 1.08rem;
+    }
+
     .abstract {
-      font-size: 1.07rem;
-      border-left: 4px solid var(--accent);
-      padding-left: 20px;
+      padding: 24px 26px;
+      border: 1px solid #d9d5ff;
+      border-left: 5px solid var(--primary);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      background: linear-gradient(135deg, var(--primary-soft), #f9f8ff);
+      font-size: 1.06rem;
     }
+
     .callout {
-      margin: 24px 0;
-      padding: 18px 20px;
-      border-radius: 14px;
-      background: var(--accent-soft);
-      border: 1px solid #d8e0ff;
+      margin: 25px 0 4px;
+      padding: 20px 22px;
+      border: 1px solid #d8d4ff;
+      border-radius: var(--radius-md);
+      background: var(--primary-soft);
+      color: #2a255f;
     }
-    .metric-grid {
+
+    .callout strong { color: var(--primary-dark); }
+
+    .callout.good {
+      border-color: #bde7cf;
+      background: var(--good-soft);
+      color: #17583a;
+    }
+
+    .callout.good strong { color: #0f673e; }
+
+    .callout.warn {
+      border-color: #edd39b;
+      background: var(--warn-soft);
+      color: #654309;
+    }
+
+    .grid-2 {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin: 24px 0;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 17px;
+      margin-top: 24px;
     }
-    .metric {
+
+    .card {
+      padding: 22px;
       border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 18px;
-      background: #fbfcfe;
+      border-radius: var(--radius-md);
+      background: var(--paper-soft);
+      box-shadow: var(--shadow-sm);
     }
+
+    .card h3 { margin-top: 0; }
+    .card p:last-child { margin-bottom: 0; }
+
+    /* Metrics */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 14px;
+      margin: 26px 0;
+    }
+
+    .metric {
+      position: relative;
+      overflow: hidden;
+      padding: 21px 19px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--paper-soft);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .metric::after {
+      content: "";
+      position: absolute;
+      right: -28px;
+      bottom: -38px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: rgba(81, 69, 205, .08);
+    }
+
     .metric strong {
+      position: relative;
+      z-index: 1;
       display: block;
-      font-size: 1.8rem;
-      line-height: 1.1;
-      color: var(--accent);
+      color: var(--primary);
+      font-size: clamp(1.65rem, 4vw, 2.15rem);
+      line-height: 1.05;
+      letter-spacing: -.035em;
     }
-    .metric span { color: var(--muted); font-size: .9rem; }
-    .table-wrap { overflow-x: auto; }
+
+    .metric span {
+      position: relative;
+      z-index: 1;
+      display: block;
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: .86rem;
+      line-height: 1.45;
+    }
+
+    /* Table */
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 25px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fff;
+    }
+
     table {
       width: 100%;
+      min-width: 760px;
       border-collapse: collapse;
-      margin: 20px 0;
-      font-size: .94rem;
+      font-size: .91rem;
     }
+
+    caption {
+      padding: 16px 18px;
+      color: var(--muted);
+      font-size: .86rem;
+      text-align: left;
+    }
+
     th, td {
-      padding: 13px 12px;
+      padding: 14px 13px;
       border-bottom: 1px solid var(--line);
       text-align: right;
+      vertical-align: middle;
     }
+
     th:first-child, td:first-child { text-align: left; }
-    thead th { background: #f1f4f9; }
-    .winner { font-weight: 800; color: var(--good); }
+
+    thead th {
+      background: #eef1f8;
+      color: #28344c;
+      font-size: .8rem;
+      font-weight: 850;
+      letter-spacing: .025em;
+      text-transform: uppercase;
+    }
+
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #fafbff; }
+    .baseline-row { background: #f5fff9; }
+    .winner { color: var(--good); font-weight: 850; }
+
+    /* Chart */
     figure {
-      margin: 30px 0 12px;
-      padding: 20px;
+      margin: 31px 0 14px;
+      padding: clamp(16px, 3vw, 26px);
       border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #fbfcfe;
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #fff, #fafbfe);
+      box-shadow: var(--shadow-sm);
     }
-    figcaption {
-      margin-top: 14px;
+
+    .chart-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 850;
+    }
+
+    .chart-subtitle {
+      margin: 2px 0 20px;
       color: var(--muted);
-      font-size: .92rem;
+      font-size: .88rem;
     }
+
+    figcaption {
+      margin-top: 18px;
+      padding-top: 17px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .91rem;
+    }
+
+    figcaption strong { color: var(--ink); }
+
+    /* Recommendations */
     .recommendations {
       display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
       gap: 16px;
+      margin-top: 23px;
     }
-    .rec {
+
+    .recommendation {
+      position: relative;
+      padding: 24px 22px 22px 70px;
       border: 1px solid var(--line);
-      border-radius: 15px;
-      padding: 20px;
+      border-radius: var(--radius-md);
+      background: var(--paper-soft);
+      box-shadow: var(--shadow-sm);
     }
-    .rec h3 { margin: 0 0 8px; }
-    code {
-      background: #f1f4f9;
-      border-radius: 6px;
-      padding: .12em .35em;
+
+    .recommendation .number {
+      position: absolute;
+      top: 22px;
+      left: 20px;
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      font-weight: 850;
     }
-    footer {
-      padding: 0 24px 60px;
+
+    .recommendation h3 { margin: 0 0 8px; }
+    .recommendation p { margin: 0; color: var(--muted); }
+
+    /* Resource links */
+    .links {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .resource {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--paper-soft);
+      color: var(--ink);
+      font-weight: 760;
+      text-decoration: none;
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+
+    .resource:hover {
+      transform: translateY(-2px);
+      border-color: #bbb4ff;
+      box-shadow: var(--shadow-sm);
+      color: var(--primary-dark);
+    }
+
+    .resource .arrow {
+      color: var(--primary);
+      font-size: 1.1rem;
+    }
+
+    footer { padding: 0 0 58px; }
+
+    .footer-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 24px 27px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fff;
+      box-shadow: var(--shadow-sm);
       color: var(--muted);
-      font-size: .92rem;
+      font-size: .9rem;
     }
-    @media (max-width: 720px) {
-      .hero { padding-top: 50px; }
-      .metric-grid { grid-template-columns: 1fr; }
-      section { border-radius: 14px; }
+
+    .footer-card p { margin: 0; }
+    .back-top { flex: 0 0 auto; font-weight: 760; text-decoration: none; }
+
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .hero-result { max-width: 420px; }
+      .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .recommendations { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      .page { width: min(calc(100% - 24px), var(--page)); }
+      .hero { padding: 58px 0 50px; }
+      h1 { font-size: clamp(2.2rem, 12vw, 3.5rem); }
+      .subtitle { font-size: 1rem; }
+      .hero-meta { display: grid; gap: 8px; }
+      main { padding-top: 24px; }
+      section { margin: 14px 0; padding: 26px 20px; border-radius: 20px; }
+      section::before { left: 20px; }
+      .grid-2, .links, .metrics { grid-template-columns: 1fr; }
+      .abstract { padding: 20px; }
+      .footer-card { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .hero { padding: 30px 0; background: #fff; color: #000; }
+      .hero::before, .nav, .back-top { display: none; }
+      .subtitle, .hero-meta, .hero-result .detail, .hero-result small { color: #333; }
+      .hero-result { border: 1px solid #aaa; background: #fff; box-shadow: none; }
+      .hero-result strong, .hero-result p { color: #000; }
+      section, figure, .metric, .card, .recommendation, .footer-card { break-inside: avoid; box-shadow: none; }
     }
   </style>
 </head>
-<body>
+
+<body id="top">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
   <header class="hero">
-    <div class="hero-inner">
-      <div class="eyebrow">FlyRank ML Internship · Capstone Research Paper</div>
-      <h1>Can Search and Engagement Signals Prioritize Content for Human Review?</h1>
-      <p class="subtitle">An honest comparison of a transparent fixed-rule baseline, Logistic Regression, and Random Forest on a client-grouped holdout.</p>
-      <div class="meta">
-        <span><strong>Author:</strong> Muhammet Ali Çavuş</span>
-        <span><strong>Primary metric:</strong> Precision@50</span>
-        <span><strong>Test records:</strong> 6,163</span>
+    <div class="page hero-grid">
+      <div>
+        <div class="eyebrow">FlyRank ML Internship · Capstone Research Paper</div>
+
+        <h1>Can Search and Engagement Signals Prioritize Content for Human Review?</h1>
+
+        <p class="subtitle">
+          An honest comparison of a transparent fixed-rule baseline, Logistic Regression,
+          and Random Forest on a client-grouped holdout.
+        </p>
+
+        <div class="hero-meta">
+          <span><strong>Author:</strong> Muhammet Ali Çavuş</span>
+          <span><strong>Dataset:</strong> 30,000 anonymized records</span>
+          <span><strong>Primary metric:</strong> Precision@50</span>
+        </div>
       </div>
+
+      <aside class="hero-result" aria-label="Headline result">
+        <small>Headline result</small>
+        <strong>0.88</strong>
+        <p>Fixed-rule baseline Precision@50</p>
+        <p class="detail">
+          44 of the baseline's first 50 recommendations were positive cases
+          on the held-out test set.
+        </p>
+      </aside>
     </div>
   </header>
 
-  <nav aria-label="Paper sections">
-    <div>
+  <nav class="nav" aria-label="Paper sections">
+    <div class="page nav-inner">
       <a href="#abstract">Abstract</a>
       <a href="#problem">Problem</a>
       <a href="#data">Data</a>
@@ -215,63 +665,255 @@
     </div>
   </nav>
 
-  <main>
+  <main id="main-content" class="page">
     <section id="abstract">
+      <p class="section-label">Research overview</p>
       <h2>Abstract</h2>
+
       <div class="abstract">
-        <p>This study asks whether historical search visibility, click-through, engagement, and content-update signals can be used to prioritize content records for human review. Using a public-safe anonymized dataset from the FlyRank ML Internship, I compared an interpretable fixed-rule baseline with Logistic Regression and Random Forest on a client-grouped holdout split. The methods were evaluated primarily with Precision@50 because the operational objective is to place useful candidates near the top of a limited review queue. The fixed-rule baseline achieved the strongest Precision@50, while Random Forest achieved the highest ROC-AUC, showing that broader discrimination and top-of-queue usefulness can lead to different model choices. The results support using an interpretable ranked queue as a human decision aid, but they do not prove that acting on the recommendations will improve business performance.</p>
+        <p>
+          FlyRank's practical content problem is deciding which pages should be reviewed first
+          when editors and SEO reviewers cannot inspect every content record.
+        </p>
+
+        <p>
+          Using 30,000 anonymized content-level records, this project compared an interpretable
+          fixed-rule baseline with Logistic Regression and Random Forest on a client-grouped
+          holdout split. Precision@50 was selected as the primary metric because the intended
+          output is a short human-review queue rather than an automated content-editing system.
+        </p>
+
+        <p>
+          The fixed-rule baseline achieved a Precision@50 of 0.88, compared with 0.64 for
+          Logistic Regression and 0.58 for Random Forest. This means that 44 of the first 50
+          recommendations produced by the baseline were positive cases. Although Random Forest
+          achieved the highest ROC-AUC at 0.6111, it did not produce the strongest first
+          50 recommendations.
+        </p>
+
+        <p>
+          The results support using the transparent fixed-rule baseline as the initial
+          content-review queue. However, this was an offline evaluation and does not prove that
+          reviewing or editing the recommended pages will improve traffic, engagement, or
+          business performance.
+        </p>
       </div>
     </section>
 
     <section id="problem">
+      <p class="section-label">The decision being supported</p>
       <h2>Introduction / Problem Statement</h2>
-      <p>Content teams often have more pages to inspect than reviewers can examine. The decision is therefore not whether every page should be changed, but which records deserve attention first.</p>
-      <p>This research tests whether historical search and engagement signals can produce a useful ranked review queue. The output is a prioritization aid for editors and SEO reviewers; it does not automatically edit, remove, or publish content.</p>
-      <div class="callout"><strong>Research question:</strong> Can public-safe historical signals rank content records that are more likely to require human review?</div>
+
+      <p class="lead">
+        FlyRank content teams may have more pages to review than editors and SEO specialists can
+        inspect manually. The practical problem is therefore not whether every page should be
+        changed, but which content records should be reviewed first.
+      </p>
+
+      <p>
+        This project treats the task as a ranking and decision-support problem. The system does
+        not automatically edit, remove, or publish content. Instead, it produces a short and
+        explainable queue that helps human reviewers focus on records with stronger evidence of
+        content-review opportunity.
+      </p>
+
+      <p>
+        The study compares a transparent fixed-rule CTR baseline with Logistic Regression and
+        Random Forest. The goal is to determine whether additional machine learning complexity
+        improves the first 50 recommendations that a reviewer would realistically inspect.
+      </p>
+
+      <div class="callout">
+        <strong>Research question:</strong>
+        Can historical search visibility, click-through, engagement, and content-freshness
+        signals help FlyRank identify which content records should be reviewed first?
+      </div>
+
+      <div class="grid-2">
+        <article class="card">
+          <h3>Decision supported</h3>
+          <p>
+            The output supports editorial and SEO prioritization by placing potentially useful
+            candidates near the top of a limited review queue.
+          </p>
+        </article>
+
+        <article class="card">
+          <h3>Human role</h3>
+          <p>
+            A reviewer still decides whether a page requires a title, metadata, content,
+            engagement, or freshness intervention.
+          </p>
+        </article>
+      </div>
     </section>
 
     <section id="data">
+      <p class="section-label">Public-safe evidence</p>
       <h2>Data</h2>
-      <p>The project uses the public-safe, anonymized dataset supplied through the FlyRank ML Internship. The release was derived from approximately 79 million rows of production search and analytics data. Modeling and ranking used the prepared <code>content_refresh_anonymized.csv</code> table containing 30,000 content-level records and 44 columns.</p>
-      <p>Signals include impressions, clicks, click-through rate, average search position, engagement measures, content freshness, and historical trend information. The forward-looking data-contract experiment used March 2026 as the feature window and April 2026 as the outcome window.</p>
+
+      <p>
+        The project uses the public-safe, anonymized dataset supplied through the FlyRank ML
+        Internship. The release was derived from approximately 79 million rows of production
+        search and analytics data.
+      </p>
+
+      <p>
+        Modeling and ranking used the prepared <code>content_refresh_anonymized.csv</code> table
+        containing 30,000 content-level records and 44 columns. Signals include impressions,
+        clicks, click-through rate, average search position, engagement measures, content
+        freshness, and historical trend information.
+      </p>
+
+      <div class="metrics">
+        <article class="metric">
+          <strong>30,000</strong>
+          <span>Prepared content-level records</span>
+        </article>
+
+        <article class="metric">
+          <strong>44</strong>
+          <span>Columns in the prepared table</span>
+        </article>
+
+        <article class="metric">
+          <strong>Mar 2026</strong>
+          <span>Feature-window month</span>
+        </article>
+
+        <article class="metric">
+          <strong>Apr 2026</strong>
+          <span>Outcome-window month</span>
+        </article>
+      </div>
+
       <h3>Public-safety and leakage exclusions</h3>
-      <p>Client and content identifiers were retained only for grouping or traceability and were not used as model features. Current- and previous-period fields used to construct the label, along with <code>trend_direction</code> and <code>trend_pct</code>, were excluded because they directly reveal or closely approximate the target. No client names, page URLs, private search queries, credentials, or identifying records appear in this page.</p>
+
+      <p>
+        Client and content identifiers were retained only for grouping or traceability and were
+        not used as model features. Current-period and previous-period fields used to construct
+        the label were excluded from the model frame.
+      </p>
+
+      <p>
+        Direct label sources, including <code>trend_direction</code> and
+        <code>trend_pct</code>, were also excluded because they directly reveal or closely
+        approximate the target.
+      </p>
+
+      <div class="callout good">
+        <strong>Public-safe publication:</strong>
+        No client names, page URLs, private search queries, credentials, or identifying
+        production records are displayed on this page.
+      </div>
     </section>
 
     <section id="methodology">
+      <p class="section-label">How the comparison was made</p>
       <h2>Methodology</h2>
-      <h3>Target and assumptions</h3>
-      <p>The target is a binary decline indicator derived from a future outcome period. A positive label identifies a record that declined under the project definition. Historical visibility, engagement, freshness, and performance variables were treated as prioritization signals, not as proof that an edit would cause improvement.</p>
-      <h3>Baseline and models</h3>
-      <p>The Week 4 baseline uses a transparent action score combining visible search demand, search position, weak click-through performance, and related opportunity signals. It was compared with Logistic Regression and Random Forest probability rankings.</p>
-      <h3>Validation design</h3>
-      <p>The split was grouped by client rather than created by random row. Training contained 23,837 records from 25 clients; testing contained 6,163 records from 7 unseen clients, with zero client overlap. This design tests transfer to unseen client groups and limits optimistic leakage through repeated client patterns.</p>
-      <h3>Evaluation</h3>
-      <p>Precision@50 is the primary operational metric because the review process focuses on a small queue. Precision@20, Recall@50, Average Precision, ROC-AUC, and the test base rate are reported as supporting measures.</p>
+
+      <div class="grid-2">
+        <article class="card">
+          <h3>Target and assumptions</h3>
+          <p>
+            The target is a binary decline indicator derived from a future outcome period.
+            A positive label identifies a record that declined under the project's prepared
+            definition.
+          </p>
+          <p>
+            Historical signals are treated as prioritization evidence, not as proof that editing
+            a page will cause improvement.
+          </p>
+        </article>
+
+        <article class="card">
+          <h3>Baseline and models</h3>
+          <p>
+            The Week 4 baseline combines meaningful search visibility, position, weak
+            click-through performance, and related opportunity signals into an interpretable
+            action score.
+          </p>
+          <p>
+            It was compared with probability rankings from Logistic Regression and Random Forest.
+          </p>
+        </article>
+
+        <article class="card">
+          <h3>Validation design</h3>
+          <p>
+            The split was grouped by client rather than created through random row sampling.
+          </p>
+          <p>
+            Training contained 23,837 records from 25 clients. Testing contained 6,163 records
+            from 7 different clients, with zero client overlap.
+          </p>
+        </article>
+
+        <article class="card">
+          <h3>Evaluation</h3>
+          <p>
+            Precision@50 is the primary operational metric because a reviewer is expected to
+            inspect a small queue rather than every record in the test set.
+          </p>
+          <p>
+            Precision@20, Recall@50, Average Precision, ROC-AUC, and the test-set base rate are
+            included as supporting measures.
+          </p>
+        </article>
+      </div>
     </section>
 
     <section id="results">
+      <p class="section-label">Model comparison</p>
       <h2>Results</h2>
-      <div class="metric-grid">
-        <div class="metric"><strong>0.88</strong><span>Baseline Precision@50</span></div>
-        <div class="metric"><strong>0.6111</strong><span>Best ROC-AUC, Random Forest</span></div>
-        <div class="metric"><strong>0.511</strong><span>Test-set positive base rate</span></div>
+
+      <p class="lead">
+        The fixed-rule baseline produced the strongest first 50 recommendations, while Random
+        Forest achieved the strongest overall ROC-AUC. The two metrics therefore supported
+        different model choices.
+      </p>
+
+      <div class="metrics">
+        <article class="metric">
+          <strong>0.88</strong>
+          <span>Baseline Precision@50</span>
+        </article>
+
+        <article class="metric">
+          <strong>44 / 50</strong>
+          <span>Positive cases in the top queue</span>
+        </article>
+
+        <article class="metric">
+          <strong>0.6111</strong>
+          <span>Best ROC-AUC, Random Forest</span>
+        </article>
+
+        <article class="metric">
+          <strong>0.511</strong>
+          <span>Test-set positive base rate</span>
+        </article>
       </div>
 
       <div class="table-wrap">
         <table>
+          <caption>
+            All methods were evaluated on the same client-grouped holdout split.
+          </caption>
+
           <thead>
             <tr>
-              <th>Method</th>
-              <th>Precision@20</th>
-              <th>Precision@50</th>
-              <th>Recall@50</th>
-              <th>Average Precision</th>
-              <th>ROC-AUC</th>
+              <th scope="col">Method</th>
+              <th scope="col">Precision@20</th>
+              <th scope="col">Precision@50</th>
+              <th scope="col">Recall@50</th>
+              <th scope="col">Average Precision</th>
+              <th scope="col">ROC-AUC</th>
             </tr>
           </thead>
+
           <tbody>
-            <tr>
+            <tr class="baseline-row">
               <td>Week 4 fixed-rule baseline</td>
               <td>0.80</td>
               <td class="winner">0.88</td>
@@ -279,6 +921,7 @@
               <td>0.5989</td>
               <td>0.5618</td>
             </tr>
+
             <tr>
               <td>Logistic Regression</td>
               <td>0.70</td>
@@ -287,6 +930,7 @@
               <td>0.5691</td>
               <td>0.5777</td>
             </tr>
+
             <tr>
               <td>Random Forest</td>
               <td>0.60</td>
@@ -300,109 +944,251 @@
       </div>
 
       <figure>
-        <svg viewBox="0 0 760 420" role="img" aria-labelledby="chartTitle chartDesc" style="width:100%;height:auto">
-          <title id="chartTitle">Precision at 50 comparison</title>
-          <desc id="chartDesc">The fixed-rule baseline scored 0.88, Logistic Regression 0.64, Random Forest 0.58, and the test base rate was 0.511.</desc>
-          <rect width="760" height="420" fill="#fbfcfe"/>
-          <line x1="90" y1="330" x2="710" y2="330" stroke="#8791a5" stroke-width="2"/>
-          <line x1="90" y1="60" x2="90" y2="330" stroke="#8791a5" stroke-width="2"/>
-          <g fill="#667085" font-size="14">
-            <text x="55" y="335">0.0</text>
-            <text x="55" y="281">0.2</text>
-            <text x="55" y="227">0.4</text>
-            <text x="55" y="173">0.6</text>
-            <text x="55" y="119">0.8</text>
-            <text x="55" y="65">1.0</text>
-          </g>
-          <g stroke="#e2e7ef" stroke-width="1">
-            <line x1="90" y1="276" x2="710" y2="276"/>
-            <line x1="90" y1="222" x2="710" y2="222"/>
-            <line x1="90" y1="168" x2="710" y2="168"/>
-            <line x1="90" y1="114" x2="710" y2="114"/>
-            <line x1="90" y1="60" x2="710" y2="60"/>
-          </g>
-          <line x1="90" y1="192" x2="710" y2="192" stroke="#7a8498" stroke-dasharray="8 7" stroke-width="2"/>
-          <text x="520" y="184" fill="#5c667a" font-size="13">Base rate 0.511</text>
+        <p class="chart-title">Precision@50 comparison</p>
+        <p class="chart-subtitle">
+          A higher value means more positive cases appeared within the first 50 recommendations.
+        </p>
 
-          <rect x="145" y="92.4" width="120" height="237.6" rx="8" fill="#3157d5"/>
-          <rect x="335" y="157.2" width="120" height="172.8" rx="8" fill="#6b83dc"/>
-          <rect x="525" y="173.4" width="120" height="156.6" rx="8" fill="#91a1df"/>
+        <svg viewBox="0 0 820 410" role="img" aria-labelledby="chart-title chart-description" style="width:100%;height:auto">
+          <title id="chart-title">Precision at 50 comparison</title>
+          <desc id="chart-description">
+            The fixed-rule baseline scored 0.88, Logistic Regression scored 0.64,
+            Random Forest scored 0.58, and the test-set base rate was 0.511.
+          </desc>
 
-          <g fill="#172033" font-size="18" font-weight="700" text-anchor="middle">
-            <text x="205" y="82">0.88</text>
-            <text x="395" y="147">0.64</text>
-            <text x="585" y="163">0.58</text>
+          <defs>
+            <linearGradient id="baseline-gradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#5145cd"/>
+              <stop offset="100%" stop-color="#0d8591"/>
+            </linearGradient>
+
+            <linearGradient id="model-gradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#8b86df"/>
+              <stop offset="100%" stop-color="#aaa7e8"/>
+            </linearGradient>
+          </defs>
+
+          <rect width="820" height="410" rx="16" fill="#fbfcff"/>
+
+          <g stroke="#e2e6ef" stroke-width="1">
+            <line x1="190" y1="55" x2="190" y2="340"/>
+            <line x1="330" y1="55" x2="330" y2="340"/>
+            <line x1="470" y1="55" x2="470" y2="340"/>
+            <line x1="610" y1="55" x2="610" y2="340"/>
+            <line x1="750" y1="55" x2="750" y2="340"/>
           </g>
-          <g fill="#445064" font-size="13" text-anchor="middle">
-            <text x="205" y="354">Fixed-rule</text>
-            <text x="205" y="371">baseline</text>
-            <text x="395" y="354">Logistic</text>
-            <text x="395" y="371">Regression</text>
-            <text x="585" y="354">Random</text>
-            <text x="585" y="371">Forest</text>
+
+          <g fill="#667085" font-size="13" text-anchor="middle">
+            <text x="190" y="372">0.00</text>
+            <text x="330" y="372">0.25</text>
+            <text x="470" y="372">0.50</text>
+            <text x="610" y="372">0.75</text>
+            <text x="750" y="372">1.00</text>
+          </g>
+
+          <line x1="476" y1="50" x2="476" y2="340" stroke="#a06717" stroke-width="2" stroke-dasharray="7 7"/>
+          <text x="484" y="42" fill="#86500a" font-size="13" font-weight="700">Base rate 0.511</text>
+
+          <g fill="#26324a" font-size="14" font-weight="700">
+            <text x="20" y="118">Fixed-rule baseline</text>
+            <text x="20" y="208">Logistic Regression</text>
+            <text x="20" y="298">Random Forest</text>
+          </g>
+
+          <rect x="190" y="82" width="493" height="50" rx="12" fill="url(#baseline-gradient)"/>
+          <rect x="190" y="172" width="358" height="50" rx="12" fill="url(#model-gradient)"/>
+          <rect x="190" y="262" width="325" height="50" rx="12" fill="url(#model-gradient)"/>
+
+          <g font-size="16" font-weight="800">
+            <text x="695" y="114" fill="#342b92">0.88</text>
+            <text x="560" y="204" fill="#5145cd">0.64</text>
+            <text x="527" y="294" fill="#5145cd">0.58</text>
           </g>
         </svg>
-        <figcaption><strong>Takeaway:</strong> the interpretable baseline placed more positive cases in the first 50 recommendations than either machine learning model, even though Random Forest achieved the strongest overall ROC-AUC.</figcaption>
+
+        <figcaption>
+          <strong>Takeaway:</strong>
+          The interpretable baseline placed more positive cases in the first 50 recommendations
+          than either machine learning model, even though Random Forest achieved the strongest
+          overall ROC-AUC.
+        </figcaption>
       </figure>
 
-      <p>The baseline’s Precision@50 of 0.88 means that 44 of its first 50 recommendations were positive cases on the held-out split. Logistic Regression reached 0.64 and Random Forest 0.58. Random Forest’s higher ROC-AUC reflects broader discrimination across the test set, but it did not produce the strongest small review queue.</p>
-      <div class="callout"><strong>Decision:</strong> retain the fixed-rule baseline as the initial queue generator for this specific dataset, label, split, and review capacity.</div>
+      <p>
+        The baseline's Precision@50 of 0.88 means that 44 of its first 50 recommendations were
+        positive cases on the held-out test set. Logistic Regression reached 0.64 and Random
+        Forest reached 0.58.
+      </p>
+
+      <p>
+        Random Forest's higher ROC-AUC reflects broader discrimination across the full test set,
+        but it did not create the strongest small review queue. A more complex model was
+        therefore not automatically the best choice for the operational objective.
+      </p>
+
+      <div class="callout good">
+        <strong>Decision:</strong>
+        Retain the fixed-rule baseline as the initial queue generator for this dataset, label
+        definition, validation split, and review capacity.
+      </div>
     </section>
 
     <section id="limitations">
+      <p class="section-label">What the evidence cannot prove</p>
       <h2>Limitations &amp; Honest Framing</h2>
-      <p>This is an offline evaluation. It does not measure what happens after editors act and does not prove that changing a recommended page will improve traffic, engagement, or business outcomes.</p>
-      <p>The label is a proxy for future decline rather than a direct measure of refresh value. Seasonality, search demand, competition, SERP changes, technical issues, and other unobserved factors may influence the outcome.</p>
-      <p>The baseline weights and thresholds were manually designed, the machine learning models were not exhaustively tuned, and the findings come from one prepared dataset and one grouped holdout. Performance may differ across future releases, markets, time periods, or review capacities.</p>
+
+      <p>
+        This is an offline evaluation. It does not measure what happens after editors act and
+        does not prove that changing a recommended page will improve traffic, engagement,
+        conversions, or other business outcomes.
+      </p>
+
+      <p>
+        The label is a proxy for future decline rather than a direct measure of refresh value.
+        Seasonality, changes in search demand, competition, SERP features, technical problems,
+        and other unobserved factors may influence the outcome.
+      </p>
+
+      <p>
+        The fixed-rule weights and thresholds were manually designed. The machine learning
+        models were not exhaustively tuned, and the findings come from one prepared dataset and
+        one client-grouped holdout.
+      </p>
+
+      <p>
+        Performance may differ across future datasets, client groups, markets, time periods,
+        labels, and review capacities.
+      </p>
+
+      <div class="callout warn">
+        <strong>Important:</strong>
+        A high queue precision identifies records associated with the project label. It does
+        not establish that a specific editorial intervention will cause a positive result.
+      </div>
     </section>
 
     <section id="recommendations">
+      <p class="section-label">From ranking to action</p>
       <h2>Ranked Recommendations</h2>
+
       <div class="recommendations">
-        <div class="rec">
-          <h3>1. Review title and meta information</h3>
-          <p>Prioritize pages with meaningful visibility but weak click-through. Compare the title and description with likely search intent, the page promise, and competing SERP features.</p>
-        </div>
-        <div class="rec">
-          <h3>2. Refresh visible but aging content</h3>
-          <p>Inspect older pages that still receive impressions. Verify dates, examples, screenshots, and whether newer competing content answers the need more effectively.</p>
-        </div>
-        <div class="rec">
-          <h3>3. Investigate engagement weakness</h3>
-          <p>For records with visibility or clicks but weak engagement, review content-message alignment, readability, internal links, calls to action, performance, and layout issues.</p>
-        </div>
-        <div class="rec">
-          <h3>4. Reassess low-confidence candidates</h3>
-          <p>Keep low-volume and borderline records lower in the queue. Gather more observations and consider seasonality and intervention cost before acting.</p>
-        </div>
+        <article class="recommendation">
+          <span class="number">1</span>
+          <h3>Review title and meta information</h3>
+          <p>
+            Prioritize pages with meaningful visibility but weak click-through. Compare the
+            title and description with likely search intent, the page promise, and competing
+            SERP features.
+          </p>
+        </article>
+
+        <article class="recommendation">
+          <span class="number">2</span>
+          <h3>Refresh visible but aging content</h3>
+          <p>
+            Inspect older pages that still receive impressions. Verify dates, examples,
+            screenshots, and whether newer competing content answers the need more effectively.
+          </p>
+        </article>
+
+        <article class="recommendation">
+          <span class="number">3</span>
+          <h3>Investigate engagement weakness</h3>
+          <p>
+            For records with visibility or clicks but weak engagement, review content-message
+            alignment, readability, internal links, calls to action, performance, and layout.
+          </p>
+        </article>
+
+        <article class="recommendation">
+          <span class="number">4</span>
+          <h3>Reassess low-confidence candidates</h3>
+          <p>
+            Keep low-volume and borderline records lower in the queue. Gather more observations
+            and consider seasonality and intervention cost before acting.
+          </p>
+        </article>
       </div>
-      <p class="callout">Operationally, review the top 50 records, document the action and outcome, and use those post-review observations to recalibrate thresholds and improve future labels.</p>
+
+      <div class="callout">
+        <strong>Operational next step:</strong>
+        Review the top 50 records, document the action and outcome, and use those post-review
+        observations to recalibrate thresholds and improve future labels.
+      </div>
     </section>
 
     <section id="reproducibility">
+      <p class="section-label">How to inspect the work</p>
       <h2>Reproducibility</h2>
-      <p>The public repository contains the complete weekly workflow, validation decisions, exclusions, evaluation results, and capstone notebook.</p>
-      <ul>
-        <li><a href="https://github.com/muhammetalicvs-prog/flyrank-ml">Project repository</a></li>
-        <li><a href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/w03_data_contract.ipynb">Data contract notebook</a></li>
-        <li><a href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/w04_baseline_score.ipynb">Fixed-rule baseline notebook</a></li>
-        <li><a href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/w05_model.ipynb">Model comparison notebook</a></li>
-        <li><a href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/w06_validation_audit.ipynb">Validation audit notebook</a></li>
-        <li><a href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/w07_action_playbook.ipynb">Action playbook notebook</a></li>
-        <li><a href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/capstone.ipynb">Capstone notebook</a></li>
-      </ul>
-      <p>Random seed: <code>42</code>. The grouped split, leakage exclusions, metric definitions, and output logic are documented in the notebooks.</p>
+
+      <p>
+        The public repository contains the complete weekly workflow, validation decisions,
+        leakage exclusions, evaluation results, action playbook, and capstone notebook.
+      </p>
+
+      <div class="links">
+        <a class="resource" href="https://github.com/muhammetalicvs-prog/flyrank-ml">
+          <span>Project repository</span><span class="arrow">↗</span>
+        </a>
+
+        <a class="resource" href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/capstone.ipynb">
+          <span>Capstone notebook</span><span class="arrow">↗</span>
+        </a>
+
+        <a class="resource" href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/w03_data_contract.ipynb">
+          <span>Week 3 data contract</span><span class="arrow">↗</span>
+        </a>
+
+        <a class="resource" href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/w04_baseline_score.ipynb">
+          <span>Week 4 fixed-rule baseline</span><span class="arrow">↗</span>
+        </a>
+
+        <a class="resource" href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/w05_model.ipynb">
+          <span>Week 5 model comparison</span><span class="arrow">↗</span>
+        </a>
+
+        <a class="resource" href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/w06_validation_audit.ipynb">
+          <span>Week 6 validation audit</span><span class="arrow">↗</span>
+        </a>
+
+        <a class="resource" href="https://github.com/muhammetalicvs-prog/flyrank-ml/blob/main/work/notebooks/w07_action_playbook.ipynb">
+          <span>Week 7 action playbook</span><span class="arrow">↗</span>
+        </a>
+
+        <a class="resource" href="https://muhammetalicvs-prog.github.io/flyrank-ml/">
+          <span>Deployed research paper</span><span class="arrow">↗</span>
+        </a>
+      </div>
+
+      <p>
+        Random seed: <code>42</code>. The grouped split, exclusions, metric definitions, and
+        output logic are documented in the notebooks.
+      </p>
     </section>
 
     <section id="credit">
+      <p class="section-label">Source and acknowledgment</p>
       <h2>Acknowledgments &amp; Data Credit</h2>
-      <p>Built on the <a href="https://flyrank.ai">FlyRank ML Internship dataset</a>.</p>
-      <p>The dataset and project structure were supplied for educational research and portfolio development. Published outputs use anonymized, public-safe information.</p>
+
+      <p>
+        Built on the
+        <a href="https://flyrank.ai">FlyRank ML Internship dataset</a>.
+      </p>
+
+      <p>
+        The dataset and project structure were supplied for educational research and portfolio
+        development. Published outputs use anonymized, public-safe information.
+      </p>
     </section>
   </main>
 
   <footer>
-    <p>Research artifact by Muhammet Ali Çavuş · FlyRank ML Internship capstone.</p>
+    <div class="page footer-card">
+      <p>
+        Research artifact by Muhammet Ali Çavuş · FlyRank ML Internship capstone.
+      </p>
+      <a class="back-top" href="#top">Back to top ↑</a>
+    </div>
   </footer>
 </body>
 </html>
