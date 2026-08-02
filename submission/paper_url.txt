@@ -1,1 +1,1 @@
-PASTE-YOUR-DEPLOYED-PAPER-URL-HERE
+https://muhammetalicvs-prog.github.io/flyrank-ml/
